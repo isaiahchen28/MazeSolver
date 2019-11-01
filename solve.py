@@ -644,18 +644,12 @@ def build_model(maze):
 
 
 if __name__ == '__main__':
-    # generate.generate_maze(7, name="maze", start=(0, 0), blockSize=10,
-    #                        slow=False)
-    # maze = generate.load_maze("maze")
-    # maze = np.array([[float(j) for j in i] for i in maze])
-    maze =  np.array([
-    [ 1.,  0.,  1.,  1.,  1.,  1.,  1.],
-    [ 1.,  1.,  1.,  0.,  0.,  1.,  0.],
-    [ 0.,  0.,  0.,  1.,  1.,  1.,  0.],
-    [ 1.,  1.,  1.,  1.,  0.,  0.,  1.],
-    [ 1.,  0.,  0.,  0.,  1.,  1.,  1.],
-    [ 1.,  0.,  1.,  1.,  1.,  1.,  1.],
-    [ 1.,  1.,  1.,  0.,  1.,  1.,  1.]
-    ])
+    # Generate the maze
+    generate.generate_maze(7, name="maze", start=(0, 0), blockSize=10,
+                           slow=False)
+    maze = generate.load_maze("maze")
+    maze = np.array([[float(j) for j in i] for i in maze])
+    # Build the model
     model = build_model(maze)
+    # Train the model
     qtrain(model, maze)
