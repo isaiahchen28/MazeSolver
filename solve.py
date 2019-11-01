@@ -169,8 +169,8 @@ The weights of network N are initialized with random values, so in the
 beginning N will produce awful results, but if our model parameters are chosen
 properly, it should converge to a solution of the Bellman Equation, and
 therefore later experiments are expected to be more truthful. Currently,
-building model that converge quickly seems to be very difficult and there is
-still lots of room for improvements in this issue.
+building a model that converges quickly seems to be very difficult and there is
+still lots of room for improvement.
 '''
 import datetime
 import json
@@ -179,8 +179,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import generate
 from keras.models import Sequential
-from keras.layers.core import Dense, Activation
-from keras.optimizers import SGD, Adam, RMSprop
+from keras.layers.core import Dense
 from keras.layers.advanced_activations import PReLU
 
 
