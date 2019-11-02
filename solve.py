@@ -537,12 +537,12 @@ def qtrain(model, maze, epsilon=0.1, **opt):
     Train the neural network model needed to solve the maze.
     '''
     # Define the number of training epochs
-    n_epoch = opt.get('n_epoch', 15000)
+    n_epoch = opt.get('n_epoch', 1000)
     # Define the maximum number of game experiences kept in memory
     max_memory = opt.get('max_memory', 1000)
     # Define the number of samples used in each training epoch
     data_size = opt.get('data_size', 50)
-    weights_file = opt.get('weights_file', "")
+    weights_file = opt.get('weights_file', "model.h5")
     name = opt.get('name', 'model')
     start_time = datetime.datetime.now()
     # If you want to continue training from a previous model, make sure the h5
@@ -550,6 +550,8 @@ def qtrain(model, maze, epsilon=0.1, **opt):
     if weights_file:
         print("loading weights from file: %s" % (weights_file,))
         model.load_weights(weights_file)
+    h5file = name + ".h5"
+    json_file = name + ".json"
     # Construct environment/game from the maze
     qmaze = Qmaze(maze)
     # Initialize experience replay object
@@ -597,6 +599,10 @@ def qtrain(model, maze, epsilon=0.1, **opt):
             # Train neural network model
             inputs, targets = experience.get_data(data_size=data_size)
             loss = model.evaluate(inputs, targets, verbose=0)
+        # Save the trained model weights and architecture
+        model.save_weights(h5file, overwrite=True)
+        with open(json_file, "w") as outfile:
+            json.dump(model.to_json(), outfile)
         if len(win_history) > hsize:
             win_rate = sum(win_history[-hsize:]) / hsize
         # Calculate current time
@@ -615,8 +621,6 @@ def qtrain(model, maze, epsilon=0.1, **opt):
             print("Reached 100%% win rate at epoch: %d" % (epoch,))
             break
     # Save the trained model weights and architecture
-    h5file = name + ".h5"
-    json_file = name + ".json"
     model.save_weights(h5file, overwrite=True)
     with open(json_file, "w") as outfile:
         json.dump(model.to_json(), outfile)
@@ -654,7 +658,7 @@ def build_model(maze):
     model.add(PReLU())
     model.add(Dense(maze.size))
     model.add(PReLU())
-    model.add(Dense(4))
+    model.add(Dense(maze.size))
     model.add(PReLU())
     model.add(Dense(4))
     model.compile(optimizer='adam', loss='mse')
