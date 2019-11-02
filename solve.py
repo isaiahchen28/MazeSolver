@@ -598,6 +598,13 @@ def qtrain(model, maze, epsilon=0.1, **opt):
             n_episodes += 1
             # Train neural network model
             inputs, targets = experience.get_data(data_size=data_size)
+            h = model.fit(
+                inputs,
+                targets,
+                epochs=8,
+                batch_size=16,
+                verbose=0,
+            )
             loss = model.evaluate(inputs, targets, verbose=0)
         # Save the trained model weights and architecture
         model.save_weights(h5file, overwrite=True)
@@ -655,8 +662,6 @@ def build_model(maze):
     '''
     model = Sequential()
     model.add(Dense(maze.size, input_shape=(maze.size,)))
-    model.add(PReLU())
-    model.add(Dense(maze.size))
     model.add(PReLU())
     model.add(Dense(maze.size))
     model.add(PReLU())
