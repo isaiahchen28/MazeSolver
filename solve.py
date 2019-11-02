@@ -176,11 +176,14 @@ import datetime
 import json
 import random
 import numpy as np
-import matplotlib.pyplot as plt
+from PIL import Image
 import generate
 from keras.models import Sequential
-from keras.layers.core import Dense
+from keras.layers.core import Dense, Activation
+from keras.optimizers import SGD, Adam, RMSprop
 from keras.layers.advanced_activations import PReLU
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
 def get_actions():
@@ -400,28 +403,42 @@ class Qmaze(object):
         return actions
 
 
-def show(qmaze):
+def convert_to_RGB(val):
+    '''
+    Convert float values from the maze into an RGB tuple
+    '''
+    rgb_val = int(val * 255.0)
+    return (rgb_val, rgb_val, rgb_val)
+
+
+def show(qmaze, name="maze", blockSize=10):
     '''
     Show the current state of the qmaze object.
     '''
-    plt.grid('on')
     nrows, ncols = qmaze.maze.shape
-    ax = plt.gca()
-    ax.set_xticks(np.arange(0.5, nrows, 1))
-    ax.set_yticks(np.arange(0.5, ncols, 1))
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
     canvas = np.copy(qmaze.maze)
     for row, col in qmaze.visited:
         canvas[row, col] = 0.6
-    rat_row, rat_col, _ = qmaze.state
+    current_row, current_col, _ = qmaze.state
     # Define current position
-    canvas[rat_row, rat_col] = 0.3
+    canvas[current_row, current_col] = 0.3
     # Define target position
     canvas[nrows - 1, ncols - 1] = 0.9
-    img = plt.imshow(canvas, interpolation='none', cmap='gray')
-    plt.show()
-    return img
+    nBlocks = len(canvas)
+    img = Image.new("RGB", (nrows * blockSize, ncols * blockSize), color=0)
+    # Parse "maze" into pixels
+    for jx in range(nBlocks):
+        for jy in range(nBlocks):
+            x = jx * blockSize
+            y = jy * blockSize
+            for i in range(blockSize):
+                for j in range(blockSize):
+                    color = convert_to_RGB(canvas[jx][jy])
+                    img.putpixel((x + i, y + j), color)
+    if not name.endswith(".png"):
+        name += ".png"
+    # Save maze
+    img.save(name)
 
 
 def play_game(model, qmaze, pos):
@@ -636,6 +653,8 @@ def build_model(maze):
     model.add(Dense(maze.size, input_shape=(maze.size,)))
     model.add(PReLU())
     model.add(Dense(maze.size))
+    model.add(PReLU())
+    model.add(Dense(4))
     model.add(PReLU())
     model.add(Dense(4))
     model.compile(optimizer='adam', loss='mse')
