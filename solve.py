@@ -179,8 +179,7 @@ import numpy as np
 from PIL import Image
 import generate
 from keras.models import Sequential
-from keras.layers.core import Dense, Activation
-from keras.optimizers import SGD, Adam, RMSprop
+from keras.layers.core import Dense
 from keras.layers.advanced_activations import PReLU
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -598,13 +597,7 @@ def qtrain(model, maze, epsilon=0.1, **opt):
             n_episodes += 1
             # Train neural network model
             inputs, targets = experience.get_data(data_size=data_size)
-            h = model.fit(
-                inputs,
-                targets,
-                epochs=8,
-                batch_size=16,
-                verbose=0,
-            )
+            model.fit(inputs, targets, epochs=8, batch_size=16, verbose=0)
             loss = model.evaluate(inputs, targets, verbose=0)
         # Save the trained model weights and architecture
         model.save_weights(h5file, overwrite=True)
@@ -616,7 +609,7 @@ def qtrain(model, maze, epsilon=0.1, **opt):
         dt = datetime.datetime.now() - start_time
         t = format_time(dt.total_seconds())
         # Print results to terminal
-        template = "Epoch: {:03d}/{:d} | Loss: {:.4f} | Episodes: {:d} | Win count: {:d} | Win rate: {:.3f} | time: {}"
+        template = "Epoch: {:03d}/{:d} | Loss: {:.4f} | Episodes: {:d} | Win count: {:d} | Win rate: {:.3f} | Time: {}"
         print(template.format(epoch, n_epoch - 1, loss,
                               n_episodes, sum(win_history), win_rate, t))
         # Check if training has exhausted all free cells and if in all cases
@@ -672,7 +665,7 @@ def build_model(maze):
 
 if __name__ == '__main__':
     # Generate the maze
-    generate.generate_maze(7, name="maze", start=(0, 0), blockSize=10,
+    generate.generate_maze(10, name="maze", start=(0, 0), blockSize=10,
                            slow=False)
     maze = generate.load_maze("maze")
     maze = np.array([[float(j) for j in i] for i in maze])
