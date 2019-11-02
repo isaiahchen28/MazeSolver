@@ -1,5 +1,5 @@
 '''
-Maze Solver
+Train a neural network to solve a maze
 
 Code and explanations adapted from https://samyzaf.com/ML/rl/qmaze.html
 
@@ -176,7 +176,7 @@ import datetime
 import json
 import random
 import numpy as np
-from PIL import Image
+import matplotlib.pyplot as plt
 import generate
 from keras.models import Sequential
 from keras.layers.core import Dense
@@ -402,45 +402,29 @@ class Qmaze(object):
         return actions
 
 
-def convert_to_RGB(val):
-    '''
-    Convert float values from the maze into an RGB tuple
-    '''
-    rgb_val = int(val * 255.0)
-    return (rgb_val, rgb_val, rgb_val)
-
-
-def show(qmaze, name="maze", blockSize=10):
+def show(qmaze):
     '''
     Show the current state of the qmaze object.
     '''
+    plt.grid('on')
     nrows, ncols = qmaze.maze.shape
+    ax = plt.gca()
+    ax.set_xticks(np.arange(0.5, nrows, 1))
+    ax.set_yticks(np.arange(0.5, ncols, 1))
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
     canvas = np.copy(qmaze.maze)
     for row, col in qmaze.visited:
         canvas[row, col] = 0.6
-    current_row, current_col, _ = qmaze.state
-    # Define current position
-    canvas[current_row, current_col] = 0.3
-    # Define target position
+    current_row, current_column, _ = qmaze.state
+    canvas[current_row, current_column] = 0.3
     canvas[nrows - 1, ncols - 1] = 0.9
-    nBlocks = len(canvas)
-    img = Image.new("RGB", (nrows * blockSize, ncols * blockSize), color=0)
-    # Parse "maze" into pixels
-    for jx in range(nBlocks):
-        for jy in range(nBlocks):
-            x = jx * blockSize
-            y = jy * blockSize
-            for i in range(blockSize):
-                for j in range(blockSize):
-                    color = convert_to_RGB(canvas[jx][jy])
-                    img.putpixel((x + i, y + j), color)
-    if not name.endswith(".png"):
-        name += ".png"
-    # Save maze
-    img.save(name)
+    img = plt.imshow(canvas, interpolation='none', cmap='gray')
+    plt.show()
+    return img
 
 
-def play_game(model, qmaze, pos):
+def play_game(model, qmaze, pos, show_maze=False):
     '''
     Play the game given a neural network, a maze, and the starting position.
     '''
@@ -455,8 +439,12 @@ def play_game(model, qmaze, pos):
         # Apply action, get rewards and new state
         envstate, reward, game_status = qmaze.act(action)
         if game_status == 'win':
+            if show_maze:
+                show(qmaze)
             return True
         elif game_status == 'lose':
+            if show_maze:
+                show(qmaze)
             return False
 
 
@@ -547,8 +535,15 @@ def qtrain(model, maze, epsilon=0.1, **opt):
     # If you want to continue training from a previous model, make sure the h5
     # file is located in the same directory
     if weights_file:
-        print("loading weights from file: %s" % (weights_file,))
-        model.load_weights(weights_file)
+        try:
+            print("loading weights from file: %s" % (weights_file,))
+            model.load_weights(weights_file)
+        except ValueError:
+            print("Incompatible model - starting from new model.")
+            pass
+        except OSError:
+            print("Model does not exist - starting from new model.")
+            pass
     h5file = name + ".h5"
     json_file = name + ".json"
     # Construct environment/game from the maze
@@ -656,7 +651,9 @@ def build_model(maze):
     model = Sequential()
     model.add(Dense(maze.size, input_shape=(maze.size,)))
     model.add(PReLU())
-    model.add(Dense(maze.size))
+    model.add(Dense(64))
+    model.add(PReLU())
+    model.add(Dense(16))
     model.add(PReLU())
     model.add(Dense(4))
     model.compile(optimizer='adam', loss='mse')
@@ -673,3 +670,5 @@ if __name__ == '__main__':
     model = build_model(maze)
     # Train the model
     qtrain(model, maze)
+    # Test the model and show the solution
+    play_game(model, Qmaze(maze), (0, 0), show_maze=True)
