@@ -1,21 +1,17 @@
 from __future__ import print_function
-import os
-import sys
-import time
 import datetime
 import json
 import random
 import numpy as np
 from keras.models import Sequential
-from keras.layers.core import Dense, Activation
-from keras.optimizers import SGD, Adam, RMSprop
+from keras.layers.core import Dense
 from keras.layers.advanced_activations import PReLU
 import matplotlib.pyplot as plt
 import generate
 
 # Generate the maze
 generate.generate_maze(7, name="maze", start=(0, 0), blockSize=10,
-                           slow=False)
+                       slow=False)
 maze = generate.load_maze("maze")
 maze = np.array([[float(j) for j in i] for i in maze])
 
