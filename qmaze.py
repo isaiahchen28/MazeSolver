@@ -9,48 +9,18 @@ from keras.layers.advanced_activations import PReLU
 import matplotlib.pyplot as plt
 import generate
 
-# Generate the maze
-generate.generate_maze(7, name="maze", start=(0, 0), blockSize=10,
-                       slow=False)
-maze = generate.load_maze("maze")
-maze = np.array([[float(j) for j in i] for i in maze])
-
-visited_mark = 0.8  # Cells visited by the rat will be painted by gray 0.8
-rat_mark = 0.5      # The current rat cell will be painteg by gray 0.5
-LEFT = 0
-UP = 1
-RIGHT = 2
-DOWN = 3
-
-# Actions dictionary
-actions_dict = {
-    LEFT: 'left',
-    UP: 'up',
-    RIGHT: 'right',
-    DOWN: 'down',
-}
-
-num_actions = len(actions_dict)
-
-# Exploration factor
-epsilon = 0.1
-
-# maze is a 2d Numpy array of floats between 0.0 to 1.0
-# 1.0 corresponds to a free cell, and 0.0 an occupied cell
-# rat = (row, col) initial rat position (defaults to (0,0))
-
 
 class Qmaze(object):
     def __init__(self, maze, rat=(0, 0)):
         self._maze = np.array(maze)
         nrows, ncols = self._maze.shape
-        self.target = (nrows-1, ncols-1)   # target cell where the "cheese" is
+        self.target = (nrows - 1, ncols - 1)
         self.free_cells = [(r, c) for r in range(nrows)
                            for c in range(ncols) if self._maze[r, c] == 1.0]
         self.free_cells.remove(self.target)
         if self._maze[self.target] == 0.0:
             raise Exception("Invalid maze: target cell cannot be blocked!")
-        if not rat in self.free_cells:
+        if rat not in self.free_cells:
             raise Exception("Invalid Rat Location: must sit on a free cell")
         self.reset(rat)
 
@@ -59,7 +29,7 @@ class Qmaze(object):
         self.maze = np.copy(self._maze)
         nrows, ncols = self.maze.shape
         row, col = rat
-        self.maze[row, col] = rat_mark
+        self.maze[row, col] = 0.5
         self.state = (row, col, 'start')
         self.min_reward = -0.5 * self.maze.size
         self.total_reward = 0
@@ -74,6 +44,11 @@ class Qmaze(object):
 
         valid_actions = self.valid_actions()
 
+        LEFT = 0
+        UP = 1
+        RIGHT = 2
+        DOWN = 3
+
         if not valid_actions:
             nmode = 'blocked'
         elif action in valid_actions:
@@ -86,8 +61,6 @@ class Qmaze(object):
                 ncol += 1
             elif action == DOWN:
                 nrow += 1
-        else:                  # invalid action, no change in rat position
-            mode = 'invalid'
 
         # new state
         self.state = (nrow, ncol, nmode)
@@ -95,7 +68,7 @@ class Qmaze(object):
     def get_reward(self):
         rat_row, rat_col, mode = self.state
         nrows, ncols = self.maze.shape
-        if rat_row == nrows-1 and rat_col == ncols-1:
+        if rat_row == nrows - 1 and rat_col == ncols - 1:
             return 1.0
         if mode == 'blocked':
             return self.min_reward - 1
@@ -129,7 +102,7 @@ class Qmaze(object):
                     canvas[r, c] = 1.0
         # draw the rat
         row, col, valid = self.state
-        canvas[row, col] = rat_mark
+        canvas[row, col] = 0.5
         return canvas
 
     def game_status(self):
@@ -137,7 +110,7 @@ class Qmaze(object):
             return 'lose'
         rat_row, rat_col, mode = self.state
         nrows, ncols = self.maze.shape
-        if rat_row == nrows-1 and rat_col == ncols-1:
+        if rat_row == nrows - 1 and rat_col == ncols - 1:
             return 'win'
 
         return 'not_over'
@@ -151,22 +124,22 @@ class Qmaze(object):
         nrows, ncols = self.maze.shape
         if row == 0:
             actions.remove(1)
-        elif row == nrows-1:
+        elif row == nrows - 1:
             actions.remove(3)
 
         if col == 0:
             actions.remove(0)
-        elif col == ncols-1:
+        elif col == ncols - 1:
             actions.remove(2)
 
-        if row > 0 and self.maze[row-1, col] == 0.0:
+        if row > 0 and self.maze[row - 1, col] == 0.0:
             actions.remove(1)
-        if row < nrows-1 and self.maze[row+1, col] == 0.0:
+        if row < nrows - 1 and self.maze[row + 1, col] == 0.0:
             actions.remove(3)
 
-        if col > 0 and self.maze[row, col-1] == 0.0:
+        if col > 0 and self.maze[row, col - 1] == 0.0:
             actions.remove(0)
-        if col < ncols-1 and self.maze[row, col+1] == 0.0:
+        if col < ncols - 1 and self.maze[row, col + 1] == 0.0:
             actions.remove(2)
 
         return actions
@@ -258,7 +231,7 @@ class Experience(object):
 
 
 def qtrain(model, maze, **opt):
-    global epsilon
+    epsilon = 0.1
     n_epoch = opt.get('n_epoch', 15000)
     max_memory = opt.get('max_memory', 1000)
     data_size = opt.get('data_size', 50)
@@ -384,10 +357,39 @@ def build_model(maze, lr=0.001):
     model.add(PReLU())
     model.add(Dense(maze.size))
     model.add(PReLU())
-    model.add(Dense(num_actions))
+    model.add(Dense(4))
     model.compile(optimizer='adam', loss='mse')
     return model
 
+def main():
+    # Generate the maze
+    generate.generate_maze(7, name="maze", start=(0, 0), blockSize=10,
+                           slow=False)
+    maze = generate.load_maze("maze")
+    maze = np.array([[float(j) for j in i] for i in maze])
 
-model = build_model(maze)
-qtrain(model, maze, epochs=1000, max_memory=8*maze.size, data_size=32)
+    visited_mark = 0.8  # Cells visited by the rat will be painted by gray 0.8
+    rat_mark = 0.5      # The current rat cell will be painteg by gray 0.5
+    LEFT = 0
+    UP = 1
+    RIGHT = 2
+    DOWN = 3
+
+    # Actions dictionary
+    actions_dict = {
+        LEFT: 'left',
+        UP: 'up',
+        RIGHT: 'right',
+        DOWN: 'down',
+    }
+
+    num_actions = len(actions_dict)
+
+    # Exploration factor
+    epsilon = 0.1
+    model = build_model(maze)
+    qtrain(model, maze, epochs=1000, max_memory=8*maze.size, data_size=32)
+
+
+if __name__ == '__main__':
+    main()
