@@ -662,8 +662,6 @@ def build_model(maze):
 
 if __name__ == '__main__':
     # Generate the maze
-    generate.generate_maze(10, name="maze", start=(0, 0), blockSize=10,
-                           slow=False)
     maze = generate.load_maze("maze")
     maze = np.array([[float(j) for j in i] for i in maze])
     # Build the model
